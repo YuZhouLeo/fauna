@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>貳、產業與品牌分析｜康和證券行銷企劃</title>
+<style>
+  :root {
+    --navy: #0f2a5c;
+    --blue: #2563eb;
+    --blue-soft: #eff6ff;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+    --green: #059669;
+    --green-soft: #ecfdf5;
+    --ink: #111827;
+    --gray: #6b7280;
+    --line: #e5e7eb;
+    --bg-soft: #f9fafb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-snap-type: y mandatory; }
+  body {
+    font-family: "PingFang TC", "Heiti TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    background: #3f4650;
+    color: var(--ink);
+  }
+  .slide {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 100vh;
+    background: #fff;
+    container-type: inline-size;
+    scroll-snap-align: start;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto 2.5vh auto;
+    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+  }
+  .pad { position: absolute; inset: 0; padding: 5cqw 6cqw 6.4cqw 6cqw; display: flex; flex-direction: column; }
+
+  .kicker {
+    font-size: 1.15cqw; font-weight: 700; letter-spacing: .45em;
+    color: var(--blue); margin-bottom: 1.2cqw;
+  }
+  h2.headline { font-size: 3.3cqw; font-weight: 800; line-height: 1.25; margin-bottom: .9cqw; }
+  .sub { font-size: 1.45cqw; color: var(--gray); margin-bottom: 2.6cqw; }
+
+  .foot {
+    position: absolute; left: 6cqw; right: 6cqw; bottom: 2.2cqw;
+    display: flex; justify-content: space-between;
+    font-size: 1.0cqw; color: #9ca3af;
+  }
+
+  .takeaway {
+    margin-top: auto; background: var(--navy); color: #fff;
+    border-radius: .9cqw; padding: 1.5cqw 2.2cqw;
+    font-size: 1.55cqw; font-weight: 600; line-height: 1.5;
+  }
+  .takeaway b { color: #93c5fd; }
+
+  .cols { display: flex; gap: 2.4cqw; flex: 1; min-height: 0; }
+  .card {
+    border: 1px solid var(--line); border-radius: 1cqw;
+    padding: 1.8cqw 2cqw; background: #fff;
+  }
+
+  .stat-num { font-size: 5.2cqw; font-weight: 800; color: var(--blue); line-height: 1.05; }
+  .stat-label { font-size: 1.3cqw; color: var(--gray); margin-top: .5cqw; line-height: 1.45; }
+
+  /* ---------- cover ---------- */
+  .cover { background: var(--navy); color: #fff; }
+  .cover .pad { justify-content: center; }
+  .cover .tag { font-size: 1.3cqw; letter-spacing: .5em; color: #93c5fd; font-weight: 700; margin-bottom: 2.2cqw; }
+  .cover h1 { font-size: 5.6cqw; font-weight: 800; margin-bottom: 2.6cqw; }
+  .cover .qs { font-size: 1.9cqw; line-height: 2.1; color: #dbeafe; }
+  .cover .qs b { color: #fff; }
+  .cover .foot { color: #7f9cc9; }
+
+  /* ---------- bars (fee) ---------- */
+  .feerow { display: flex; align-items: center; gap: 1.4cqw; margin-bottom: 1.15cqw; }
+  .feerow .name { width: 11cqw; font-size: 1.35cqw; text-align: right; color: var(--ink); flex: none; }
+  .feerow .track { flex: 1; height: 2.1cqw; background: var(--bg-soft); border-radius: .4cqw; position: relative; }
+  .feerow .bar { height: 100%; border-radius: .4cqw; background: #cbd5e1; }
+  .feerow.hl .bar { background: var(--navy); }
+  .feerow .val { width: 9cqw; font-size: 1.3cqw; color: var(--gray); flex: none; }
+  .feerow.hl .val { color: var(--navy); font-weight: 700; }
+
+  /* ---------- stacked segment bar ---------- */
+  .segbar { display: flex; height: 3.4cqw; border-radius: .5cqw; overflow: hidden; margin: 1.2cqw 0 .8cqw 0; }
+  .segbar .s1 { background: var(--blue); }
+  .segbar .s2 { background: #93c5fd; }
+  .seglegend { display: flex; gap: 2.2cqw; font-size: 1.2cqw; color: var(--gray); }
+  .dot { display: inline-block; width: 1cqw; height: 1cqw; border-radius: 50%; margin-right: .5cqw; }
+
+  /* ---------- scale bars (survey) ---------- */
+  .scalechart { position: relative; padding: 1cqw 0 2.6cqw 0; }
+  .scalerow { display: flex; align-items: center; gap: 1.4cqw; margin-bottom: 1.5cqw; }
+  .scalerow .name { width: 17cqw; font-size: 1.35cqw; text-align: right; color: var(--ink); flex: none; }
+  .scalerow .track { flex: 1; height: 2.5cqw; background: var(--bg-soft); border-radius: .4cqw; position: relative; }
+  .scalerow .bar { height: 100%; border-radius: .4cqw; display: flex; align-items: center; justify-content: flex-end; padding-right: .9cqw; color: #fff; font-size: 1.3cqw; font-weight: 700; }
+  .bar.know { background: var(--blue); }
+  .bar.unknow { background: #93c5fd; }
+  .midline { position: absolute; top: 0; bottom: 1.2cqw; left: calc(17cqw + 1.4cqw + (100% - 17cqw - 1.4cqw) * .6); border-left: .18cqw dashed var(--red); }
+  .midlabel { position: absolute; bottom: 0; left: calc(17cqw + 1.4cqw + (100% - 17cqw - 1.4cqw) * .6); transform: translateX(-50%); font-size: 1.1cqw; color: var(--red); }
+
+  /* ---------- table ---------- */
+  table { border-collapse: collapse; width: 100%; font-size: 1.35cqw; }
+  th, td { padding: 1.05cqw .8cqw; text-align: center; border-bottom: 1px solid var(--line); }
+  thead th { font-size: 1.25cqw; color: var(--gray); font-weight: 700; border-bottom: .18cqw solid var(--ink); }
+  th.rowh { text-align: left; color: var(--gray); font-weight: 600; width: 12cqw; }
+  td.good { background: var(--green-soft); color: #065f46; font-weight: 700; }
+  td.bad { background: var(--red-soft); color: var(--red); font-weight: 800; }
+  td.mid { color: var(--ink); }
+  col.konho { }
+  .konho-col { box-shadow: inset 0 0 0 .16cqw var(--navy); }
+
+  /* ---------- insight cards ---------- */
+  .insight { flex: 1; border-radius: 1cqw; padding: 1.9cqw 2cqw; display: flex; flex-direction: column; }
+  .insight .lv { font-size: 1.15cqw; font-weight: 700; letter-spacing: .25em; margin-bottom: .9cqw; }
+  .insight h3 { font-size: 1.95cqw; margin-bottom: 1cqw; }
+  .insight p { font-size: 1.32cqw; line-height: 1.65; color: #374151; }
+  .i-gray { background: var(--bg-soft); border: 1px solid var(--line); }
+  .i-gray .lv { color: var(--gray); }
+  .i-blue { background: var(--blue-soft); border: 1px solid #bfdbfe; }
+  .i-blue .lv { color: var(--blue); }
+  .i-green { background: var(--green-soft); border: 1px solid #a7f3d0; }
+  .i-green .lv { color: var(--green); }
+
+  .chip { display: inline-block; background: var(--blue-soft); border: 1px solid #bfdbfe; color: #1d4ed8; border-radius: .6cqw; padding: .55cqw 1.1cqw; font-size: 1.25cqw; font-weight: 600; margin: 0 .6cqw .8cqw 0; }
+
+  .bignum-red { color: var(--red); }
+  .bignum-green { color: var(--green); }
+
+  @media print {
+    body { background: #fff; }
+    .slide { width: 1280px; height: 720px; aspect-ratio: auto; max-height: none; margin: 0; box-shadow: none; page-break-after: always; break-after: page; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @page { size: 1280px 720px; margin: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============ 第 1 頁：章節封面 ============ -->
+<section class="slide cover">
+  <div class="pad">
+    <div class="tag">康和證券行銷企劃</div>
+    <h1>貳、產業與品牌分析</h1>
+    <div class="qs">
+      為什麼是<b>年輕人</b>？<br>
+      為什麼是<b>現在</b>？<br>
+      為什麼是<b>社群與產品體驗</b>？
+    </div>
+    <div class="foot"><span>產業數據回答前兩個問題，業務體質與競品對照回答第三個</span><span>1 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 2 頁：市場機會 ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">市場機會</div>
+    <h2 class="headline">市場的增量，幾乎全部來自 30 歲以下</h2>
+    <div class="sub">年輕人正在進場，政策也在推</div>
+    <div class="cols">
+      <div class="card" style="flex:1.2; display:flex; flex-direction:column; justify-content:center;">
+        <div class="stat-num">62.4%</div>
+        <div class="stat-label">2025 年 12 月單月新開戶中，30 歲以下的佔比</div>
+        <div style="height:1.8cqw"></div>
+        <div style="display:flex; gap:2.4cqw;">
+          <div>
+            <div style="font-size:2.7cqw; font-weight:800;">55.18 萬</div>
+            <div class="stat-label">2025 全年新增開戶人數</div>
+          </div>
+          <div>
+            <div style="font-size:2.7cqw; font-weight:800;">36%</div>
+            <div class="stat-label">定期定額投資人中<br>30 歲以下的佔比</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:1.6cqw;">
+        <div class="card" style="flex:1;">
+          <div style="font-size:1.2cqw; color:var(--gray); font-weight:700; margin-bottom:.6cqw;">政策紅利一</div>
+          <div style="font-size:1.6cqw; font-weight:700;">當沖證交稅減半</div>
+          <div style="font-size:1.3cqw; color:var(--gray); margin-top:.4cqw;">已延長至 2027 年 12 月底</div>
+        </div>
+        <div class="card" style="flex:1;">
+          <div style="font-size:1.2cqw; color:var(--gray); font-weight:700; margin-bottom:.6cqw;">政策紅利二</div>
+          <div style="font-size:1.6cqw; font-weight:700;">TISA 個人投資儲蓄帳戶</div>
+          <div style="font-size:1.3cqw; color:var(--gray); margin-top:.4cqw;">1,000 元起、上路一年參與破 20 萬人</div>
+        </div>
+      </div>
+    </div>
+    <div class="takeaway">年輕客戶習慣養成後很少換券商，<b>現在搶到人，等於鎖住未來十年的手續費</b></div>
+    <div class="foot"><span>資料：證交所、集保結算所、財政部（2025–2026）</span><span>2 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 3 頁：競爭現實 ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">競爭現實</div>
+    <h2 class="headline">折扣戰打到底之後，戰場只剩體驗</h2>
+    <div class="sub">全台 64 家券商賣同樣的商品，價格已無再降空間</div>
+    <div class="cols">
+      <div class="card" style="flex:1.35;">
+        <div style="font-size:1.3cqw; color:var(--gray); font-weight:700; margin-bottom:1.4cqw;">電子下單折扣行情（越短越便宜）</div>
+        <div class="feerow"><div class="name">新光</div><div class="track"><div class="bar" style="width:4%"></div></div><div class="val">新戶 0 元</div></div>
+        <div class="feerow"><div class="name">富邦</div><div class="track"><div class="bar" style="width:30%"></div></div><div class="val">1.8 折</div></div>
+        <div class="feerow"><div class="name">永豐大戶投</div><div class="track"><div class="bar" style="width:33%"></div></div><div class="val">2 折</div></div>
+        <div class="feerow hl"><div class="name">康和</div><div class="track"><div class="bar" style="width:42%"></div></div><div class="val">約 2.5 折</div></div>
+        <div class="feerow"><div class="name">元大</div><div class="track"><div class="bar" style="width:100%"></div></div><div class="val">約 6 折</div></div>
+      </div>
+      <div class="card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <div class="stat-num">78.45%</div>
+        <div class="stat-label">證券業電子交易比率</div>
+        <div style="height:1.4cqw"></div>
+        <div style="font-size:1.5cqw; line-height:1.7;">對年輕客戶來說，券商的門面不是營業廳，<b>是手機裡那顆 App</b></div>
+      </div>
+    </div>
+    <div class="takeaway">「大家都便宜」的時代，客戶去留取決於<b>體驗與認知</b>，這是行銷解方鎖定社群與產品重塑的原因</div>
+    <div class="foot"><span>資料：Money101 比價彙整（2026/7）、證期局統計；康和官方折數待確認</span><span>3 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 4 頁：康和業務體質 ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">康和業務體質</div>
+    <h2 class="headline">行銷使得上力的，是經紀</h2>
+    <div class="sub">自營隨行情起伏，穩定的經紀市佔僅 0.76%，這裡就是行銷的主戰場</div>
+    <div class="cols">
+      <div class="card" style="flex:1.25;">
+        <div style="font-size:1.3cqw; color:var(--gray); font-weight:700;">114 年度部門損益結構</div>
+        <div class="segbar"><div class="s1" style="width:71%"></div><div class="s2" style="width:29%"></div></div>
+        <div class="seglegend">
+          <span><span class="dot" style="background:var(--blue)"></span>自營 13.18 億（約七成）</span>
+          <span><span class="dot" style="background:#93c5fd"></span>經紀 5.53 億（約三成）</span>
+        </div>
+        <div style="height:1.8cqw"></div>
+        <div style="font-size:1.35cqw; line-height:1.7; color:#374151;">
+          單季損益一年內的擺盪：<br>
+          <span style="font-size:2.2cqw; font-weight:800; color:var(--red);">–4.04 億</span>
+          <span style="font-size:1.5cqw; color:var(--gray);">（114Q1）</span>
+          <span style="font-size:1.8cqw;">→</span>
+          <span style="font-size:2.2cqw; font-weight:800; color:var(--green);">+11.33 億</span>
+          <span style="font-size:1.5cqw; color:var(--gray);">（115Q1）</span><br>
+          <span style="color:var(--gray); font-size:1.25cqw;">擺盪來源幾乎都是自營；自營看行情、承銷看案源，行銷能改變的只有經紀</span>
+        </div>
+      </div>
+      <div class="card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+        <div class="stat-num bignum-red">0.76%</div>
+        <div class="stat-label">經紀市佔率，全市場第 20 名<br>（前五大合計吃下超過四成）</div>
+        <div style="height:1.6cqw"></div>
+        <div style="font-size:1.45cqw; line-height:1.7;">反過來看：基期低，<b>每一個新開戶的邊際價值，康和都比大券商大</b></div>
+      </div>
+    </div>
+    <div class="foot"><span>資料：康和 114Q4／115Q1 合併財報部門資訊、114 年度股東會年報</span><span>4 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 5 頁：認知與意願缺口 ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">問卷深入發現</div>
+    <h2 class="headline">不是被討厭，是沒被看見</h2>
+    <div class="sub">不認識康和的人，嘗試意願其實不低（1–5 分量表，n=64）</div>
+    <div class="card" style="flex:1;">
+      <div class="scalechart" style="height:100%;">
+        <div style="font-size:1.25cqw; color:var(--gray); font-weight:700; margin-bottom:1.2cqw;">新功能嘗試意願</div>
+        <div class="scalerow"><div class="name">知道康和（n=20）</div><div class="track"><div class="bar know" style="width:79%">3.95</div></div></div>
+        <div class="scalerow"><div class="name">不知道康和（n=44）</div><div class="track"><div class="bar unknow" style="width:69%">3.45</div></div></div>
+        <div style="font-size:1.25cqw; color:var(--gray); font-weight:700; margin:1.6cqw 0 1.2cqw 0;">介面優化提升意願</div>
+        <div class="scalerow"><div class="name">知道康和（n=20）</div><div class="track"><div class="bar know" style="width:83%">4.15</div></div></div>
+        <div class="scalerow"><div class="name">不知道康和（n=44）</div><div class="track"><div class="bar unknow" style="width:74%">3.68</div></div></div>
+        <div class="midline"></div>
+        <div class="midlabel">量表中點 3.0</div>
+      </div>
+    </div>
+    <div class="takeaway">兩組差距只有約 0.5 分：這是<b>曝光問題</b>，不是產品被排斥。先讓人看見，再用體驗留人</div>
+    <div class="foot"><span>資料：本組問卷 n=70，量表有效 n=64（2026/8/3–8/6 校園便利抽樣）</span><span>5 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 6 頁：數位門面對照 ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">數位門面</div>
+    <h2 class="headline">年輕人打開手機，看到的差距是這樣</h2>
+    <div class="sub">App 評分與社群量體，康和都排最後（2026 年 8 月查詢）</div>
+    <table>
+      <thead>
+        <tr>
+          <th class="rowh"></th>
+          <th class="konho-col">康和<br>掌先機</th>
+          <th>元大<br>投資先生</th>
+          <th>群益<br>掌中財神</th>
+          <th>富果<br>Fugle</th>
+          <th>永豐<br>大戶投</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th class="rowh">iOS 評分</th>
+          <td class="bad konho-col">2.7 ★</td>
+          <td class="mid">3.6 ★</td>
+          <td class="bad">2.8 ★</td>
+          <td class="good">4.3 ★</td>
+          <td class="good">4.8 ★</td>
+        </tr>
+        <tr>
+          <th class="rowh">Android 評分</th>
+          <td class="mid konho-col">3.1 ★</td>
+          <td class="mid">3.9 ★</td>
+          <td class="mid">—</td>
+          <td class="mid">—</td>
+          <td class="good">4.7 ★</td>
+        </tr>
+        <tr>
+          <th class="rowh">IG 追蹤數</th>
+          <td class="bad konho-col">139</td>
+          <td class="mid">2,996</td>
+          <td class="bad">246</td>
+          <td class="good">約 2.16 萬</td>
+          <td class="mid">4,973</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:1.6cqw; font-size:1.35cqw; color:#374151;">問卷中 <b>68.8%</b> 受訪者表示介面優化會提升使用意願（給 4 分以上）——富果與大戶投證明，「介面太複雜」可以用產品設計解決</div>
+    <div class="takeaway" style="margin-top:1.6cqw;">康和 <b>2.7 星 對 大戶投 4.8 星</b>；IG <b>139 人 對 富果 2.16 萬人</b>，量體差距超過百倍</div>
+    <div class="foot"><span>資料：App Store／Google Play 商店頁、各官方 IG；「—」為未查得</span><span>6 / 7</span></div>
+  </div>
+</section>
+
+<!-- ============ 第 7 頁：競爭者啟示（收束） ============ -->
+<section class="slide">
+  <div class="pad">
+    <div class="kicker">競爭者啟示</div>
+    <h2 class="headline">別人已經驗證過這條路</h2>
+    <div class="sub">我們提的每個解方，市場上都有成功前例</div>
+    <div class="cols">
+      <div class="insight i-gray">
+        <div class="lv">學不起</div>
+        <h3>元大</h3>
+        <p>市佔 14.51% 的龍頭，豪禮與校園深耕靠資源量取勝，不必跟。但它的 IG 不到 3 千人——<b>社群是大券商沒守好的戰場</b>，正是小券商的空檔。</p>
+      </div>
+      <div class="insight i-blue">
+        <div class="lv">學得會</div>
+        <h3>群益</h3>
+        <p>用「Top Trader」大專交易競賽一次做到曝光、開戶、徵才。康和同樣有期貨子公司，加上辦了 17 年的暑期產學營，<b>校園企劃是把既有資產升級</b>。</p>
+      </div>
+      <div class="insight i-green">
+        <div class="lv">該追</div>
+        <h3>富果＋大戶投</h3>
+        <p>把 App 體驗、低門檻費率、社群內容做成同一件事。富果新戶近 8 成在 40 歲以下、大戶投下載累計 111 萬次，<b>驗證了「產品重塑＋社群」走得通</b>。</p>
+      </div>
+    </div>
+    <div class="takeaway">能見度真空靠<b>社群</b>解、認知斷層靠<b>產品重塑</b>解、避險心理靠<b>話術優化</b>解——接下來的企劃案，就是這三條路的執行版</div>
+    <div class="foot"><span>資料：經濟日報、工商時報、Top Trader 活動官網、各公司公開資料</span><span>7 / 7</span></div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('keydown', function (e) {
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const cur = slides.findIndex(s => s.getBoundingClientRect().top > -10);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      (slides[Math.min(cur + 1, slides.length - 1)] || slides[0]).scrollIntoView({ behavior: 'smooth' });
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault();
+      (slides[Math.max(cur - 1, 0)] || slides[0]).scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+</script>
+</body>
+</html>
