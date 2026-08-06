@@ -40,8 +40,13 @@ def main():
     if not tw_q and not tp_q:
         raise SystemExit("兩邊行情都沒抓到，中止")
 
+    if not tw_q:
+        print("  ⚠ 上市行情這輪抓不到，上市的量價沿用舊值")
+    if not tp_q:
+        print("  ⚠ 上櫃行情這輪抓不到，上櫃的量價沿用舊值")
+
     print("抓上市櫃名單…")
-    listed, otc = tq.universes()
+    listed, otc = tq.universes(ROOT)
     tw_ind = tq.industry_map(listed, old, "上市")
     tp_ind = tq.industry_map(otc, old, "上櫃")
     print(f"  上市 {len(listed)} 家 / 上櫃 {len(otc)} 家")
@@ -94,9 +99,17 @@ def main():
     dropped = [c for c in old if c not in {s["c"] for s in stocks}]
     stocks.sort(key=lambda s: s["c"])
 
-    # 先把今天的量寫進歷史，再算均量（今天要算進去）
+    # 先把今天的量寫進歷史，再算均量（今天要算進去）。
+    # 只記「這輪真的抓到行情」的檔——某個市場掛掉時沿用的是舊值，
+    # 把舊值當成今天的量記進歷史會污染均量。少記一天沒差，
+    # load_history 本來就是除以「該檔實際出現的天數」。
     day_key = tw_date or tp_date
-    tq.save_day(ROOT, day_key, {s["c"]: s["v"] for s in stocks})
+    universe_codes = set(listed) | set(otc)
+    fresh_vol = {code: (v or 0)
+                 for quotes in (tw_q, tp_q)
+                 for code, (v, _) in quotes.items()
+                 if code in universe_codes}
+    tq.save_day(ROOT, day_key, fresh_vol)
     avg, ndays = tq.load_history(ROOT, days=AVG_DAYS)
     if ndays >= MIN_AVG_DAYS:
         for s in stocks:

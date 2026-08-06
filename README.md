@@ -44,6 +44,21 @@
 腳本只覆寫每檔的 `v`（當日張數）、`va`（20 日均量）、`p`（收盤價），
 公司名 `n`／產業 `i`／市場 `m`／業務描述 `d` 一律沿用舊值，不會被洗掉。
 
+### 櫃買中心的 520
+
+櫃買（`tpex.org.tw`）擋在 Cloudflare 後面，從 GitHub Actions 的機房 IP 打過去
+**會間歇性回 HTTP 520**（Cloudflare 連不到後面的 origin）。這是對面的毛病，不是設定錯。
+腳本為此做了三層防護：
+
+1. 遇到 520／502／504 這類暫時性錯誤指數退避重試 5 次（2、4、8、16 秒）。
+2. 上市櫃**名單**抓不到時回退到 `data/universe.json` 快取。名單一個月才動幾筆，
+   舊一兩天完全無所謂——不該讓它害整天的行情更新泡湯。
+3. 某個市場的**行情**整個抓不到時，該市場的量價沿用舊值，另一個市場照常更新；
+   當天的成交量歷史只記真的抓到的部分，不會把舊值當今天的量污染均量。
+
+所以單次 520 不會讓 workflow 變紅，18:00 那輪也會再補一次。
+真的兩輪都掛，隔天的排程會自然補上。
+
 ### 啟用前要做的事
 
 GitHub → repo **Settings → Actions → General → Workflow permissions**
@@ -80,6 +95,7 @@ scripts/twquotes.py           證交所/櫃買抓取層,兩支腳本共用
 scripts/update_quotes.py      每日更新行情 + 算均量
 scripts/backfill_volume.py    回補歷史成交量
 data/volume/YYYMMDD.json      每個交易日的成交量(保留 60 天)
+data/universe.json            上市櫃名單快取,名單 API 掛掉時的後備
 data/descriptions.json        業務描述覆寫檔(選用)
 ```
 

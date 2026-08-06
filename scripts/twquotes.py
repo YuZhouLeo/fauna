@@ -14,9 +14,21 @@ import urllib.request
 from collections import Counter, defaultdict
 from datetime import timedelta
 
-UA = {"User-Agent": "Mozilla/5.0 (fauna twflip quote updater)"}
+HEADERS = {
+    # 櫃買中心擋在 Cloudflare 後面，從 GitHub Actions 的機房 IP 過去很容易吃到 520
+    # （origin 回了空回應）。帶齊瀏覽器會送的標頭可以明顯降低機率。
+    "User-Agent": ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"),
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "keep-alive",
+}
 _LAST_CALL = [0.0]
 MIN_GAP = 0.7  # 對官方站台客氣一點，兩次請求至少間隔這麼久
+
+# 520/521/522/523/524 都是 Cloudflare 在講「我連不到後面的 origin」——
+# 這是對面暫時性的毛病，值得等久一點再試。
+TRANSIENT = {429, 500, 502, 503, 504, 520, 521, 522, 523, 524}
 
 
 def _ssl_ctx():
@@ -31,7 +43,8 @@ def _ssl_ctx():
 CTX = _ssl_ctx()
 
 
-def fetch(url, tries=3):
+def fetch(url, tries=5, referer=None):
+    """抓 JSON，遇到暫時性錯誤指數退避重試。全部失敗才丟 RuntimeError。"""
     last = None
     for i in range(tries):
         gap = MIN_GAP - (time.monotonic() - _LAST_CALL[0])
@@ -39,14 +52,31 @@ def fetch(url, tries=3):
             time.sleep(gap)
         _LAST_CALL[0] = time.monotonic()
         try:
-            req = urllib.request.Request(url, headers=UA)
+            h = dict(HEADERS)
+            if referer:
+                h["Referer"] = referer
+            req = urllib.request.Request(url, headers=h)
             with urllib.request.urlopen(req, timeout=60, context=CTX) as r:
                 return json.loads(r.read().decode("utf-8"))
-        except Exception as e:  # noqa: BLE001 - 網路層什麼都可能炸，一律重試
+        except Exception as e:  # noqa: BLE001 - 網路層什麼都可能炸
             last = e
+            code = getattr(e, "code", None)
             print(f"  取數失敗({i + 1}/{tries}) {url} :: {e}", file=sys.stderr)
-            time.sleep(1.5 * (i + 1))
+            if i == tries - 1:
+                break
+            if code is not None and code not in TRANSIENT:
+                break  # 404 之類重試也沒用，直接放棄
+            time.sleep(min(2 ** i * 2, 30))  # 2, 4, 8, 16 秒
     raise RuntimeError(f"取數連續失敗: {url} :: {last}")
+
+
+def fetch_or_none(url, **kw):
+    """抓不到就回 None，讓呼叫端自己決定要不要降級，而不是整支腳本掛掉。"""
+    try:
+        return fetch(url, **kw)
+    except RuntimeError as e:
+        print(f"  ⚠ {e}", file=sys.stderr)
+        return None
 
 
 # ---------- 數值處理 ----------
@@ -91,8 +121,8 @@ def twse_quotes(date):
     """
     url = ("https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX"
            f"?date={date.strftime('%Y%m%d')}&type=ALLBUT0999&response=json")
-    d = fetch(url)
-    if d.get("stat") != "OK":
+    d = fetch_or_none(url, referer="https://www.twse.com.tw/")
+    if not d or d.get("stat") != "OK":
         return None, {}
     table = next((t for t in d.get("tables", [])
                   if "每日收盤行情" in t.get("title", "")), None)
@@ -108,8 +138,8 @@ def tpex_quotes(date):
     """上櫃每日收盤行情（不含定價）。同 twse_quotes 的回傳格式。"""
     url = ("https://www.tpex.org.tw/www/zh-tw/afterTrading/otc"
            f"?date={date.strftime('%Y/%m/%d')}&type=EW&id=&response=json")
-    d = fetch(url)
-    if str(d.get("stat", "")).lower() != "ok":
+    d = fetch_or_none(url, referer="https://www.tpex.org.tw/zh-tw/mainboard/trading/info/stock-pricing.html")
+    if not d or str(d.get("stat", "")).lower() != "ok":
         return None, {}
     tables = d.get("tables") or []
     table = next((t for t in tables if t.get("data")), None)
@@ -144,20 +174,68 @@ def recent_trading_days(end, back=14):
 
 # ---------- 上市櫃名單 ----------
 
-def universes():
+def universe_cache_path(root):
+    return os.path.join(root, "data", "universe.json")
+
+
+def universes(root):
     """回傳 ({上市代號: (產業代碼, 官方簡稱)}, {上櫃...})。
 
     用途是界定「哪些是真的上市／上櫃公司」——行情表裡混了 ETF、權證，靠這個濾掉。
+
+    這份名單一個月才動個幾筆，但櫃買那支 API 從 GitHub Actions 打過去常吃 Cloudflare 520。
+    為了不讓「名單暫時抓不到」害整天的行情更新泡湯，成功時寫入 data/universe.json，
+    失敗時回退到快取——名單舊個一兩天完全無所謂，行情才是每天要更新的東西。
     """
-    tw = fetch("https://openapi.twse.com.tw/v1/opendata/t187ap03_L")
-    tp = fetch("https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O")
-    listed = {str(r["公司代號"]).strip():
-              (str(r.get("產業別", "")).strip(), str(r.get("公司簡稱", "")).strip())
-              for r in tw if len(str(r["公司代號"]).strip()) == 4}
-    otc = {str(r["SecuritiesCompanyCode"]).strip():
-           (str(r.get("SecuritiesIndustryCode", "")).strip(),
-            str(r.get("CompanyAbbreviation", "")).strip())
-           for r in tp if len(str(r["SecuritiesCompanyCode"]).strip()) == 4}
+    cache_path = universe_cache_path(root)
+    cache = {}
+    if os.path.exists(cache_path):
+        try:
+            cache = json.load(open(cache_path, encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            cache = {}
+
+    def resolve(key, url, parse, referer=None):
+        raw = fetch_or_none(url, referer=referer)
+        if raw:
+            got = parse(raw)
+            if got:
+                return got, True
+        old = cache.get(key)
+        if old:
+            print(f"  ⚠ {key} 名單抓不到，改用快取（{len(old)} 家，存於 {cache.get('_date', '?')}）",
+                  file=sys.stderr)
+            return {k: tuple(v) for k, v in old.items()}, False
+        raise RuntimeError(f"{key} 名單抓不到，也沒有快取可用，中止")
+
+    listed, tw_fresh = resolve(
+        "listed", "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+        lambda rows: {str(r["公司代號"]).strip():
+                      (str(r.get("產業別", "")).strip(), str(r.get("公司簡稱", "")).strip())
+                      for r in rows if len(str(r["公司代號"]).strip()) == 4},
+        referer="https://openapi.twse.com.tw/")
+    otc, tp_fresh = resolve(
+        "otc", "https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_O",
+        lambda rows: {str(r["SecuritiesCompanyCode"]).strip():
+                      (str(r.get("SecuritiesIndustryCode", "")).strip(),
+                       str(r.get("CompanyAbbreviation", "")).strip())
+                      for r in rows if len(str(r["SecuritiesCompanyCode"]).strip()) == 4},
+        referer="https://www.tpex.org.tw/")
+
+    out = dict(cache)
+    if tw_fresh:
+        out["listed"] = {k: list(v) for k, v in listed.items()}
+    if tp_fresh:
+        out["otc"] = {k: list(v) for k, v in otc.items()}
+    # 名單一個月才動幾筆，但這個檔有 48KB。只有內容真的變了才重寫，
+    # 否則每個交易日都會多一顆 48KB 的 blob，一年白白胖十幾 MB。
+    if {k: v for k, v in out.items() if k != "_date"} != \
+       {k: v for k, v in cache.items() if k != "_date"}:
+        out["_date"] = time.strftime("%Y-%m-%d")
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        json.dump(out, open(cache_path, "w", encoding="utf-8"),
+                  ensure_ascii=False, separators=(",", ":"))
+        print(f"  名單有異動，已更新快取（{cache_path}）")
     return listed, otc
 
 
