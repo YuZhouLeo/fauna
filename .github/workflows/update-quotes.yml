@@ -3,10 +3,9 @@ name: 每日更新成交量與收盤價
 on:
   schedule:
     # cron 是 UTC。台北 = UTC+8。
-    # 台股 13:30 收盤，但證交所/櫃買的收盤行情大約 14:00–14:30 才發布，
-    # 13:30 去抓一定只拿得到前一天的數字，所以排在 14:30 抓。
-    - cron: '30 6 * * 1-5'   # 台北 週一~週五 14:30
-    - cron: '30 7 * * 1-5'   # 台北 15:30 補跑一次（前一輪若還沒發布或 Actions 塞車）
+    # 台股 13:30 收盤，證交所／櫃買的收盤行情約 14:00–14:30 才發布，排 17:00 一定拿得到。
+    - cron: '0 9 * * 1-5'    # 台北 週一~週五 17:00
+    - cron: '0 10 * * 1-5'   # 台北 18:00 補跑一次（前一輪若遇上 Actions 排隊）
   workflow_dispatch:          # 也可以到 Actions 分頁手動按
 
 # 同一時間只跑一個，避免兩輪撞在一起互相蓋掉
@@ -31,8 +30,10 @@ jobs:
 
       - name: 有變動才 commit
         run: |
-          if git diff --quiet; then
-            echo "沒有變動（今天可能休市，或這個時間點還沒發布）——跳過 commit"
+          # 用 status --porcelain 而不是 diff --quiet：新增的 data/volume/*.json
+          # 是未追蹤檔案，diff 看不到，會害當天的成交量歷史被丟掉。
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "沒有變動（今天休市，或資料與上一輪相同）——跳過 commit"
             exit 0
           fi
           git config user.name  "github-actions[bot]"

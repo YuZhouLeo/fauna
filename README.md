@@ -1,25 +1,47 @@
 # 台股翻牌練習
 
-單檔 HTML 的台股代號／名稱記憶卡。`index.html` 打開就能用，沒有相依套件。
+單檔 HTML 的台股代號／名稱記憶卡，`index.html` 打開就能用，沒有相依套件、不用連後端。
+行情由 GitHub Actions 每天自動更新。
+
+## 玩法
+
+- **出題模式**：看代號猜名稱／看名稱猜代號／兩者混合
+- **門檻**：用 20 日均量篩掉冷門股，只練會在盤上看到的檔
+- **練習範圍**：智慧排程（預設）／只練不熟／全部
+- 翻面用空白鍵，`↑`／`→` 認得、`↓`／`←` 不熟
+
+## 間隔重複
+
+每張卡記一個等級，答對往上升、間隔拉長；答錯直接掉回 0 級、當天重來。
+
+| 等級 | 0 | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|---|
+| 幾天後再出現 | 當天 | 1 | 3 | 7 | 16 | 35 | 90 |
+
+**智慧排程**會先清今天到期的（愈早到期的愈前面），排完了才補沒學過的新卡。
+所以每天打開只會看到「該複習的」加上一點新的，而不是把 300 檔重頭再翻一次。
+同一輪之內答錯的卡仍然照舊制走——每 3 張新題穿插 1 張回鍋。
+
+進度存在瀏覽器的 localStorage（`twflip-srs`），換手機或清快取會歸零。
+舊版的「不熟清單」（`twflip-miss`）會在第一次開啟時自動接成 0 級卡，進度不會白費。
 
 ## 每日自動更新
 
-`.github/workflows/update-quotes.yml` 會在**台北時間週一～週五 14:30**（另有 15:30 補跑一次）
-更新 `index.html` 裡每檔的成交量與收盤價，有變動才 commit。
+`.github/workflows/update-quotes.yml` 在**台北時間週一～週五 17:00**（18:00 再補跑一次）
+更新 `index.html` 裡每檔的當日成交量、20 日均量與收盤價，有變動才 commit。
 
-> **為什麼不是 13:30**：台股 13:30 收盤，但證交所／櫃買的收盤行情大約 14:00–14:30 才發布。
-> 13:30 去抓一定只拿得到前一個交易日的數字，所以排在 14:30。
+> 台股 13:30 收盤，但證交所／櫃買的收盤行情約 14:00–14:30 才發布，17:00 一定拿得到。
 
 資料來源都是官方公開資料，不需要任何 API key：
 
 | 用途 | 來源 |
 |---|---|
 | 上市行情 | `twse.com.tw/rwd/zh/afterTrading/MI_INDEX` (`type=ALLBUT0999`) |
-| 上櫃行情 | `tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes` |
+| 上櫃行情 | `tpex.org.tw/www/zh-tw/afterTrading/otc` (`type=EW`) |
 | 上市名單／產業別 | `openapi.twse.com.tw/v1/opendata/t187ap03_L` |
 | 上櫃名單／產業別 | `tpex.org.tw/openapi/v1/mopsfin_t187ap03_O` |
 
-腳本只覆寫每檔的 `v`（成交張數）與 `p`（收盤價），
+腳本只覆寫每檔的 `v`（當日張數）、`va`（20 日均量）、`p`（收盤價），
 公司名 `n`／產業 `i`／市場 `m`／業務描述 `d` 一律沿用舊值，不會被洗掉。
 
 ### 啟用前要做的事
@@ -27,27 +49,43 @@
 GitHub → repo **Settings → Actions → General → Workflow permissions**
 選 **Read and write permissions**，否則 workflow 沒有權限 push。
 
-要立刻試跑：Actions 分頁 → 「每日更新成交量與收盤價」→ Run workflow。
+要立刻試跑：Actions 分頁 →「每日更新成交量與收盤價」→ Run workflow。
 
-### 本機手動跑
+### 為什麼用均量而不是當日量
+
+當日成交量噪音很大。實測 2026/07/24 與 08/06 兩個交易日，用當日量篩 ≥3,000 張，
+**牌組有 26% 的股票進進出出**（≥10,000 張是 29%）——等於今天練的跟明天練的有四分之一不一樣。
+改用 20 日均量後，同樣的比較只剩 **2.2%**（≥10,000 張是 3.3%）。
+
+均量只除以「該檔實際有出現的天數」，新上市或停牌過的股票才不會被稀釋成假的低量。
+
+## 手動操作
 
 ```bash
-python3 scripts/update_quotes.py
+python3 scripts/update_quotes.py          # 跑一次每日更新
+python3 scripts/backfill_volume.py 20     # 回補最近 20 個交易日的量
 ```
+
+`backfill_volume.py` 平常不用跑，只有第一次啟用均量、或 `data/volume/` 被清掉時才需要。
+每個請求間隔 0.7 秒，回補 20 天約 1 分鐘。
+
+歷史不足 5 個交易日時腳本不會寫 `va`，前端會自動退回用當日量篩選，
+標題與卡片背面的文字也會跟著改成「成交量」，不會出現騙人的「20 日均量」。
 
 ## 檔案
 
 ```
-index.html                     整個 app（含 PAYLOAD 股票資料）
-scripts/update_quotes.py       每日行情更新
-data/volume/YYYMMDD.json       每個交易日的成交量（保留 60 天，供日後做均量篩選）
-data/descriptions.json         業務描述覆寫檔（選用，{"2330": "..."}）
-.github/workflows/             排程
+index.html                    整個 app(含 PAYLOAD 股票資料)
+scripts/twquotes.py           證交所/櫃買抓取層,兩支腳本共用
+scripts/update_quotes.py      每日更新行情 + 算均量
+scripts/backfill_volume.py    回補歷史成交量
+data/volume/YYYMMDD.json      每個交易日的成交量(保留 60 天)
+data/descriptions.json        業務描述覆寫檔(選用)
 ```
 
 ### `data/descriptions.json`
 
-想補／改某檔的一句話業務描述，寫在這裡就好，不用去動 `index.html`：
+想補或改某檔的一句話業務描述，寫在這裡就好，不用去動 `index.html`：
 
 ```json
 {
@@ -56,11 +94,12 @@ data/descriptions.json         業務描述覆寫檔（選用，{"2330": "..."}�
 }
 ```
 
-更新腳本每次跑都會把這個檔合併進 `index.html`，優先權高於 `index.html` 裡既有的 `d`。
+每次跑更新腳本都會把這個檔合併進 `index.html`，優先權高於 `index.html` 裡既有的 `d`。
+目前 1,971 檔裡有 286 檔有描述。
 
 ## 資料規則
 
 - 收錄範圍：上市 + 上櫃的**普通股**。ETF、權證、台灣存託憑證（`-DR`）都不收。
 - 當日無成交：量記 `0`，價沿用上次有成交的收盤價。
-- 新上市櫃公司會自動加入（名稱取官方簡稱，產業別由代碼對照補上）。
+- 新上市櫃公司自動加入（名稱取官方簡稱，產業別由代碼對照補上）。
 - 安全閥：檔數若比前一版少超過 5%，判定為來源資料殘缺，當天中止不更新。
