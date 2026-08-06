@@ -1,0 +1,42 @@
+name: 每日更新成交量與收盤價
+
+on:
+  schedule:
+    # cron 是 UTC。台北 = UTC+8。
+    # 台股 13:30 收盤，但證交所/櫃買的收盤行情大約 14:00–14:30 才發布，
+    # 13:30 去抓一定只拿得到前一天的數字，所以排在 14:30 抓。
+    - cron: '30 6 * * 1-5'   # 台北 週一~週五 14:30
+    - cron: '30 7 * * 1-5'   # 台北 15:30 補跑一次（前一輪若還沒發布或 Actions 塞車）
+  workflow_dispatch:          # 也可以到 Actions 分頁手動按
+
+# 同一時間只跑一個，避免兩輪撞在一起互相蓋掉
+concurrency:
+  group: update-quotes
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 抓行情並改寫 index.html
+        run: python scripts/update_quotes.py
+
+      - name: 有變動才 commit
+        run: |
+          if git diff --quiet; then
+            echo "沒有變動（今天可能休市，或這個時間點還沒發布）——跳過 commit"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html data/
+          git commit -m "chore: 更新成交量與收盤價 $(TZ=Asia/Taipei date '+%Y-%m-%d')"
+          git push
